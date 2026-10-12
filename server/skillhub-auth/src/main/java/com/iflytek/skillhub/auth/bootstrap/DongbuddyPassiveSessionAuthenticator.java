@@ -67,6 +67,12 @@ public class DongbuddyPassiveSessionAuthenticator implements PassiveSessionAuthe
         Instant now = Instant.now();
         Optional<DongbuddySsoTicket.Payload> payload =
             DongbuddySsoTicket.verify(ticket, properties.getSecret(), now);
+        // Rotation window: clients embed the key at build time, so installs
+        // predating a rotation still sign with the previous secret.
+        if (payload.isEmpty() && properties.getPreviousSecret() != null
+                && !properties.getPreviousSecret().isBlank()) {
+            payload = DongbuddySsoTicket.verify(ticket, properties.getPreviousSecret(), now);
+        }
         if (payload.isEmpty() || !claimNonce(payload.get().nonce(), payload.get().exp())) {
             return Optional.empty();
         }

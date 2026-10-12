@@ -24,9 +24,22 @@ scripts/build-release-images.sh --skip-tests    # 赶时间跳过单测
 |---|---|---|
 | `SKILLHUB_AUTH_SESSION_BOOTSTRAP_ENABLED` | **server 镜像 ENV 已烘焙 =true**；compose 默认 true | `skillhub.auth.session-bootstrap.enabled` |
 | `SKILLHUB_AUTH_DONGBUDDY_ENABLED` | **server 镜像 ENV 已烘焙 =true**；compose 默认 true | `skillhub.auth.dongbuddy.enabled` |
-| `SKILLHUB_AUTH_DONGBUDDY_SECRET` | **仅运行时注入，永不入镜像/仓库** | 与 Dongbuddy engine-gateway 的 `SKILLHUB_SSO_SECRET` 同值；缺失时 provider fail-closed（功能关闭、不影响其他登录） |
+| `SKILLHUB_AUTH_DONGBUDDY_SECRET` | **仅运行时注入，永不入镜像** | 必须等于 Dongbuddy 客户端内置钥 `BUILTIN_SKILLHUB_SSO_SECRET`（kunbuddy-ultra `apps/engine-gateway/src/skillhubConfig.ts`）；缺失时 provider fail-closed |
+| `SKILLHUB_AUTH_DONGBUDDY_PREVIOUS_SECRET` | 仅运行时注入，可选 | 轮换窗口内同时接受旧钥 |
+
+**客户端零配置**：Dongbuddy 是 Win/Mac 分发的客户端，终端用户不设任何 env；
+共享钥随 gateway bundle 编译分发（明文 JS 可提取 ≈ 内部公开钥强度，靠限流 +
+nonce 单次 + 审计 + 轮换控制半径）。`SKILLHUB_SSO_SECRET` / `SKILLHUB_BASE_URL`
+在 gateway 侧仅作**开发覆盖**。
 
 验证烘焙：`docker run --rm --entrypoint sh skillhub-server:latest -c 'env | grep SKILLHUB_AUTH_'`。
+
+### 密钥轮换 runbook
+
+1. 生成新钥；SkillHub 部署设 `SKILLHUB_AUTH_DONGBUDDY_SECRET=<new>`、
+   `SKILLHUB_AUTH_DONGBUDDY_PREVIOUS_SECRET=<old>`（重启生效，无需重新打镜像）；
+2. kunbuddy-ultra 更新 `BUILTIN_SKILLHUB_SSO_SECRET=<new>`，发新客户端；
+3. 旧客户端基本升级完毕后，清空 `SKILLHUB_AUTH_DONGBUDDY_PREVIOUS_SECRET`。
 
 ## 3. 部署（目标机）
 

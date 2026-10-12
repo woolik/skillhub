@@ -23,6 +23,14 @@ public class DongbuddySsoProperties {
     /** Shared HMAC-SHA256 secret used to sign/verify Dongbuddy tickets. */
     private String secret = "";
 
+    /**
+     * Optional previous secret accepted during a rotation window: shipped
+     * clients embed the key at build time, so old installs keep signing with
+     * the old key until they upgrade. Set new secret + previous-secret=old,
+     * ship clients, then clear this once old installs are gone.
+     */
+    private String previousSecret = "";
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -37,6 +45,14 @@ public class DongbuddySsoProperties {
 
     public void setSecret(String secret) {
         this.secret = secret;
+    }
+
+    public String getPreviousSecret() {
+        return previousSecret;
+    }
+
+    public void setPreviousSecret(String previousSecret) {
+        this.previousSecret = previousSecret;
     }
 
     /** True only when the provider is switched on AND a secret is present. */

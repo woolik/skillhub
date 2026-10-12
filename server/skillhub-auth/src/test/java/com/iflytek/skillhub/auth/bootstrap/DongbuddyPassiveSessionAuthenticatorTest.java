@@ -113,7 +113,35 @@ class DongbuddyPassiveSessionAuthenticatorTest {
         assertThat(authenticator.authenticate(new MockHttpServletRequest())).isEmpty();
     }
 
+    @Test
+    void acceptsTicketSignedWithPreviousSecretDuringRotationWindow() {
+        properties.setPreviousSecret("old-rotated-secret");
+        PlatformPrincipal principal = new PlatformPrincipal(
+            "kb-4abbbd4a", "kb-4abbbd4a", null, null, "dongbuddy", Set.of("USER"));
+        when(provisioningService.bindOrCreate(any())).thenReturn(principal);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(DongbuddyPassiveSessionAuthenticator.TICKET_HEADER,
+            signWith("old-rotated-secret", "rot-1", 60));
+
+        assertThat(authenticator.authenticate(request)).contains(principal);
+    }
+
+    @Test
+    void rejectsPreviousSecretTicketWhenRotationWindowClosed() {
+        properties.setPreviousSecret("");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(DongbuddyPassiveSessionAuthenticator.TICKET_HEADER,
+            signWith("old-rotated-secret", "rot-2", 60));
+
+        assertThat(authenticator.authenticate(request)).isEmpty();
+        verify(provisioningService, never()).bindOrCreate(any());
+    }
+
     private static String sign(String nonce, long ttlSeconds) {
+        return signWith(SECRET, nonce, ttlSeconds);
+    }
+
+    private static String signWith(String secret, String nonce, long ttlSeconds) {
         long now = Instant.now().getEpochSecond();
         String payloadJson = """
             {"phone":"+8619874719079","userId":"kb-4abbbd4a","nonce":"%s","iat":%d,"exp":%d}
@@ -121,7 +149,7 @@ class DongbuddyPassiveSessionAuthenticatorTest {
         String payloadSegment = ENCODER.encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             return payloadSegment + "." + ENCODER.encodeToString(
                 mac.doFinal(payloadSegment.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception ex) {
