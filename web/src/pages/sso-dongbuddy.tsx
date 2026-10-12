@@ -39,10 +39,13 @@ export function SsoDongbuddyPage() {
     bootstrap.mutateAsync('dongbuddy', {
       onSuccess: async () => {
         clearTicketCookie()
-        // Land on 「我的命名空间」: Dongbuddy provisioning no longer creates a
-        // personal namespace (team spaces are admin-assigned), so /space/<userId>
-        // would dead-end for fresh accounts.
-        await navigate({ to: '/dashboard/namespaces', replace: true })
+        // Land on the authenticated default dashboard: Dongbuddy provisioning
+        // no longer creates a personal namespace (team spaces are
+        // admin-assigned), so /space/<userId> would dead-end for fresh
+        // accounts; /dashboard/namespaces is avoided because the upstream
+        // me/namespaces endpoint 500s on some deployments while dashboard
+        // only needs my-skills + tokens.
+        await navigate({ to: '/dashboard', replace: true })
       },
       onError: (err) => {
         clearTicketCookie()
