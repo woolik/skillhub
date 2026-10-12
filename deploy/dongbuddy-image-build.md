@@ -94,3 +94,9 @@ docker compose -f compose.release.yml -f deploy/local-e2e-no-scanner.override.ym
    排障时别误判为票据问题。
 5. web 镜像**无需任何新 env**：`/sso/dongbuddy` 是纯前端换票页，走既有
    `authApi.bootstrapSession`；只有 server 需要开关与密钥。
+6. **发布 500「Failed to process files」= 存储目录权限**：server 以 `USER app`
+   运行，而 `/var/lib/skillhub/storage` 挂载卷若由旧版 root 镜像创建则属主为
+   root → `LocalFileStorageService.putObject` 抛 AccessDeniedException。
+   修复：`docker exec <server> id` 取 uid:gid 后
+   `docker run --rm -v <storage卷>:/data --user root alpine chown -R <uid>:<gid> /data`
+   （bind mount 则在宿主机 chown）；无需重打镜像。
