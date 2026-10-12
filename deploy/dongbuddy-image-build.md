@@ -72,12 +72,12 @@ TICKET=$(node -e '/* HMAC-SHA256(secret, base64url(payload)) 见 gateway skillhu
 curl -i -b cj.txt -c cj.txt -X POST localhost:8080/api/v1/auth/session/bootstrap \
   -H "X-XSRF-TOKEN: $XSRF" -H "X-Dongbuddy-Sso: $TICKET" \
   -H 'Content-Type: application/json' -d '{"provider":"dongbuddy"}'        # 期望 200 + userId=kb-…
-curl -s -b cj.txt 'localhost:8080/api/web/skills?namespace=kb-4abbbd4a'    # 期望 200
+curl -s -b cj.txt 'localhost:8080/api/web/skills'                        # 期望 200（全部可见：global + 成员空间）
 # 结束后拆栈：
 docker compose -f compose.release.yml -f deploy/local-e2e-no-scanner.override.yml down -v
 ```
 
-期望：bootstrap 200（首次自动建 user + namespace `kb-…`）；同票重用 401（nonce 单次）；
+期望：bootstrap 200（首次自动建 user 并加入 global；团队空间由管理员添加）；同票重用 401（nonce 单次）；
 无票/坏签 401。
 
 ## 5. 踩过的坑

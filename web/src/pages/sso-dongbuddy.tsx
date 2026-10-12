@@ -37,13 +37,12 @@ export function SsoDongbuddyPage() {
     attemptedRef.current = true
     setTicketCookie(ticket)
     bootstrap.mutateAsync('dongbuddy', {
-      onSuccess: async (user) => {
+      onSuccess: async () => {
         clearTicketCookie()
-        await navigate({
-          to: '/space/$namespace',
-          params: { namespace: user.userId },
-          replace: true,
-        })
+        // Land on 「我的命名空间」: Dongbuddy provisioning no longer creates a
+        // personal namespace (team spaces are admin-assigned), so /space/<userId>
+        // would dead-end for fresh accounts.
+        await navigate({ to: '/dashboard/namespaces', replace: true })
       },
       onError: (err) => {
         clearTicketCookie()

@@ -10,8 +10,6 @@ import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.PlatformRoleDefaults;
 import com.iflytek.skillhub.auth.repository.IdentityBindingRepository;
 import com.iflytek.skillhub.domain.namespace.GlobalNamespaceMembershipService;
-import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
-import com.iflytek.skillhub.domain.namespace.NamespaceService;
 import com.iflytek.skillhub.domain.user.UserAccount;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.domain.user.UserStatus;
@@ -20,31 +18,25 @@ import com.iflytek.skillhub.domain.user.UserStatus;
  * Resolves (or creates on first sight) the SkillHub account behind a verified
  * Dongbuddy ticket, mirroring {@code IdentityBindingService.bindOrCreate} but
  * with the account id controlled by the caller: Dongbuddy usernames
- * ({@code kb-<8hex>}) become SkillHub user ids AND personal namespace slugs so
- * 「所属命名空间」 maps 1:1 to the Dongbuddy identity.
+ * ({@code kb-<8hex>}) become SkillHub user ids. Like the regular OAuth flow
+ * this only joins the built-in global namespace — team namespaces (e.g. pzt)
+ * are assigned by admins; no personal namespace is auto-created.
  *
  * <p>Provisioning is idempotent: the (provider=dongbuddy, subject=phone)
- * binding is the stability key; repeated logins reuse the same account and
- * never recreate the namespace.
+ * binding is the stability key; repeated logins reuse the same account.
  */
 @Service
 public class DongbuddySsoProvisioningService {
 
     private final UserAccountRepository userRepo;
     private final IdentityBindingRepository bindingRepo;
-    private final NamespaceRepository namespaceRepo;
-    private final NamespaceService namespaceService;
     private final GlobalNamespaceMembershipService globalNamespaceMembershipService;
 
     public DongbuddySsoProvisioningService(UserAccountRepository userRepo,
                                            IdentityBindingRepository bindingRepo,
-                                           NamespaceRepository namespaceRepo,
-                                           NamespaceService namespaceService,
                                            GlobalNamespaceMembershipService globalNamespaceMembershipService) {
         this.userRepo = userRepo;
         this.bindingRepo = bindingRepo;
-        this.namespaceRepo = namespaceRepo;
-        this.namespaceService = namespaceService;
         this.globalNamespaceMembershipService = globalNamespaceMembershipService;
     }
 
@@ -82,19 +74,10 @@ public class DongbuddySsoProvisioningService {
             payload.phone(),
             payload.userId()
         ));
+        // Same as the regular OAuth flow: join global only. Team namespaces
+        // are admin-assigned; auto-creating a personal namespace produced
+        // empty clutter spaces (see feat/dongbuddy-sso history).
         globalNamespaceMembershipService.ensureMember(user.getId());
-
-        // Personal namespace keyed by the Dongbuddy username; createNamespace
-        // grants OWNER in the same transaction. Slug collisions (a hand-made
-        // namespace with the same slug) degrade gracefully to "reuse exists".
-        if (namespaceRepo.findBySlug(payload.userId()).isEmpty()) {
-            namespaceService.createNamespace(
-                payload.userId(),
-                payload.userId(),
-                "Auto-provisioned Dongbuddy namespace",
-                user.getId()
-            );
-        }
         return user;
     }
 }
