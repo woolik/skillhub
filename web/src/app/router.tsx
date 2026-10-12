@@ -80,6 +80,7 @@ const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const TermsOfServicePage = createLazyRouteComponent(() => import('@/pages/terms'), 'TermsOfServicePage')
 const NamespacePage = createLazyRouteComponent(() => import('@/pages/namespace'), 'NamespacePage')
+const SsoDongbuddyPage = createLazyRouteComponent(() => import('@/pages/sso-dongbuddy'), 'SsoDongbuddyPage')
 const SkillDetailPage = createLazyRouteComponent(() => import('@/pages/skill-detail'), 'SkillDetailPage')
 const SkillVersionComparePage = createLazyRouteComponent(() => import('@/pages/skill-version-compare'), 'SkillVersionComparePage')
 const DashboardPage = createLazyRouteComponent(() => import('@/pages/dashboard'), 'DashboardPage')
@@ -238,6 +239,17 @@ const namespaceRoute = createRoute({
   path: '/space/$namespace',
   beforeLoad: requireAuth,
   component: NamespacePage,
+})
+
+// Dongbuddy trusted-gateway SSO: exchanges the one-time HMAC ticket for a
+// first-party session, then redirects into the caller's namespace page.
+const ssoDongbuddyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sso/dongbuddy',
+  validateSearch: (search: Record<string, unknown>): { ticket: string } => ({
+    ticket: typeof search.ticket === 'string' ? search.ticket : '',
+  }),
+  component: SsoDongbuddyPage,
 })
 
 const skillDetailRoute = createRoute({
@@ -467,6 +479,7 @@ const routeTree = rootRoute.addChildren([
   searchRoute,
   termsRoute,
   namespaceRoute,
+  ssoDongbuddyRoute,
   skillDetailRoute,
   skillVersionCompareRoute,
   dashboardRoute,

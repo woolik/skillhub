@@ -30,6 +30,12 @@ RUN apt-get update && \
     useradd --system --gid app --create-home app
 WORKDIR /app
 
+# Dongbuddy trusted-gateway SSO: image-level defaults for internal builds.
+# Runtime env still wins; SKILLHUB_AUTH_DONGBUDDY_SECRET stays runtime-only
+# (the provider is fail-closed without it).
+ENV SKILLHUB_AUTH_SESSION_BOOTSTRAP_ENABLED=true \
+    SKILLHUB_AUTH_DONGBUDDY_ENABLED=true
+
 COPY --from=build /app/skillhub-app/target/*.jar app.jar
 
 # Create storage directory and set permissions
