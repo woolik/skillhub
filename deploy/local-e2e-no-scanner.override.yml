@@ -1,0 +1,22 @@
+# Local e2e / smoke override: run the stack WITHOUT a working skill-scanner
+# (the scanner container needs SKILL_SCANNER_LLM_* keys we don't have locally).
+# Server-side scanning is disabled via SKILLHUB_SECURITY_SCANNER_ENABLED=false.
+#
+# Note: compose MERGES depends_on mappings (keys cannot be deleted in an
+# override without !reset), so the scanner dependency is downgraded to
+# service_started instead of removed.
+#
+# Usage:
+#   SKILLHUB_SERVER_IMAGE=skillhub-server SKILLHUB_WEB_IMAGE=skillhub-web SKILLHUB_VERSION=latest \
+#   SKILLHUB_AUTH_DONGBUDDY_SECRET=<secret> SKILLHUB_SECURITY_SCANNER_ENABLED=false \
+#   SKILLHUB_DOWNLOAD_ANON_COOKIE_SECRET=<any string >= 32 chars> \
+#   docker compose -f compose.release.yml -f deploy/local-e2e-no-scanner.override.yml up -d server web
+services:
+  server:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      skill-scanner:
+        condition: service_started

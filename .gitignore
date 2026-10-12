@@ -93,3 +93,7 @@ charts/skillhub/charts/*.tgz
 
 # Local config file
 .mcp.json
+
+# Local image export artifacts (scripts/build-release-images.sh)
+skillhub-server.tar
+skillhub-web.tar
