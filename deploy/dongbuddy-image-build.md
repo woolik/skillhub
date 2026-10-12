@@ -94,7 +94,16 @@ docker compose -f compose.release.yml -f deploy/local-e2e-no-scanner.override.ym
    排障时别误判为票据问题。
 5. web 镜像**无需任何新 env**：`/sso/dongbuddy` 是纯前端换票页，走既有
    `authApi.bootstrapSession`；只有 server 需要开关与密钥。
-6. **发布 500「Failed to process files」= 存储目录权限**：server 以 `USER app`
+6. **清理开源内置技能（@global 13 个社区技能）**：启动播种开关
+   `SKILLHUB_BUILTIN_SKILLS_ENABLED`（本 compose 默认已改 false）。**先**设 false
+   重启（否则删除后重启又被播回来），**再**以 SUPER_ADMIN 会话逐个硬删：
+   `DELETE /api/web/skills/global/<slug>`（带 X-XSRF-TOKEN；硬删含索引与存储文件）。
+   名单：exam-ready weather time-blocking-scheduler study-strategy-selector
+   storytelling-advisor retrieval-practice-generator meeting-note-summarizer
+   linkedin-post-formatter frontend-design documentation-writer
+   daily-standup-journal ai-claim-checker agentguard。
+   想可逆则改用 `POST /api/v1/admin/skills/{id}/hide`（仅隐藏不删除）。
+7. **发布 500「Failed to process files」= 存储目录权限**：server 以 `USER app`
    运行，而 `/var/lib/skillhub/storage` 挂载卷若由旧版 root 镜像创建则属主为
    root → `LocalFileStorageService.putObject` 抛 AccessDeniedException。
    修复：`docker exec <server> id` 取 uid:gid 后

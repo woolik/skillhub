@@ -87,7 +87,12 @@ services:
       SKILLHUB_SECURITY_SCANNER_ENABLED: ${SKILLHUB_SECURITY_SCANNER_ENABLED:-true}
       SKILLHUB_SECURITY_SCANNER_URL: http://skill-scanner:8000
       SKILLHUB_SECURITY_SCANNER_MODE: upload
-      SKILLHUB_BUILTIN_SKILLS_ENABLED: ${SKILLHUB_BUILTIN_SKILLS_ENABLED:-true}
+      # Internal deployments ship their own skills via team namespaces; the
+      # OSS built-in skill seeding (13 community skills into @global at boot)
+      # is off by default here. Existing seeded skills are NOT removed by
+      # this flag — delete them once via DELETE /api/web/skills/global/<slug>
+      # as SUPER_ADMIN (see deploy/dongbuddy-image-build.md).
+      SKILLHUB_BUILTIN_SKILLS_ENABLED: ${SKILLHUB_BUILTIN_SKILLS_ENABLED:-false}
       SKILLHUB_AUTH_DIRECT_ENABLED: ${SKILLHUB_AUTH_DIRECT_ENABLED:-false}
       # Dongbuddy trusted-gateway SSO (session bootstrap + dongbuddy provider).
       # Internal deployments flip these on and supply SKILLHUB_AUTH_DONGBUDDY_SECRET —
